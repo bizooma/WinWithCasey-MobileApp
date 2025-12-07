@@ -1,0 +1,29 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+// THIS FILE SHOULD BE MINIMAL.
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    // This block is mostly for legacy support.
+    // The actual plugin versions are now controlled by settings.gradle.
+    dependencies {
+        // It's good practice to keep these roughly in sync, but settings.gradle is the source of truth.
+        classpath 'com.android.tools.build:gradle:8.9.1'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

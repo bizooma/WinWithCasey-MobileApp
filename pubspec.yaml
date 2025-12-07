@@ -1,0 +1,35 @@
+name: impactguide
+description: "An all-in-one mobile app for personal injury victims, providing immediate accident response, comprehensive documentation, seamless communication with legal teams, and educational resources to navigate the complexities of personal injury law."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  uuid: ^4.0.0
+  youtube_player_iframe: ^5.0.0
+  share_plus: ^12.0.0
+  archive: ^4.0.0
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  geolocator: 13.0.4
+  camera: 0.11.2
+  record: '>=5.1.2'
+  shared_preferences: ^2.0.0
+  path_provider: ^2.0.0
+  permission_handler: ^12.0.0
+  url_launcher: ^6.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/app_background.png
+    - assets/images/app_background_1.png
