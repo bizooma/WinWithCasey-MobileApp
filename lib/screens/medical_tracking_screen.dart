@@ -39,71 +39,6 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
     });
   }
 
-  Future<void> _createSampleData() async {
-    // Create sample appointments
-    final sampleAppointments = [
-      MedicalAppointment(
-        id: '1',
-        scheduledDate: DateTime.now().add(const Duration(days: 3)),
-        providerName: 'Dr. Sarah Johnson',
-        appointmentType: 'Orthopedic Consultation',
-        address: '123 Medical Center Dr, Seattle, WA',
-        phoneNumber: '(206) 555-0123',
-        isCompleted: false,
-      ),
-      MedicalAppointment(
-        id: '2',
-        scheduledDate: DateTime.now().subtract(const Duration(days: 7)),
-        providerName: 'Seattle Emergency Room',
-        appointmentType: 'Emergency Visit',
-        address: '456 Hospital Ave, Seattle, WA',
-        phoneNumber: '(206) 555-0456',
-        isCompleted: true,
-        medicalRecordId: '1',
-      ),
-    ];
-
-    // Create sample medical records
-    final sampleRecords = [
-      MedicalRecord(
-        id: '1',
-        date: DateTime.now().subtract(const Duration(days: 7)),
-        providerName: 'Seattle Emergency Room',
-        appointmentType: 'Emergency Visit',
-        painLevel: 8,
-        symptoms: 'Severe back pain, neck stiffness, headache',
-        treatment: 'X-rays, pain medication, muscle relaxers',
-        notes: 'Patient reports being rear-ended in car accident. Recommended follow-up with orthopedic specialist.',
-        photoUrls: [],
-        cost: 1250.00,
-        insuranceCovered: true,
-      ),
-      MedicalRecord(
-        id: '2',
-        date: DateTime.now().subtract(const Duration(days: 3)),
-        providerName: 'Dr. Michael Chen',
-        appointmentType: 'Physical Therapy',
-        painLevel: 6,
-        symptoms: 'Reduced back pain, improved range of motion',
-        treatment: 'Physical therapy exercises, heat therapy',
-        notes: 'Good progress. Continue PT 3x per week.',
-        photoUrls: [],
-        cost: 120.00,
-        insuranceCovered: true,
-      ),
-    ];
-
-    for (final appointment in sampleAppointments) {
-      await LocalStorageService().saveMedicalAppointment(appointment);
-    }
-
-    for (final record in sampleRecords) {
-      await LocalStorageService().saveMedicalRecord(record);
-    }
-
-    _loadData();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,8 +76,6 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
         icon: Icons.calendar_today,
         title: 'No Appointments',
         subtitle: 'Track your medical appointments here',
-        actionText: 'Add Sample Data',
-        onAction: _createSampleData,
       );
     }
 
@@ -195,8 +128,6 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
         icon: Icons.description,
         title: 'No Medical Records',
         subtitle: 'Document your medical visits and treatments',
-        actionText: 'Add Sample Data',
-        onAction: _createSampleData,
       );
     }
 
@@ -223,8 +154,6 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
     required IconData icon,
     required String title,
     required String subtitle,
-    required String actionText,
-    required VoidCallback onAction,
   }) {
     return Center(
       child: Padding(
@@ -253,10 +182,6 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: onAction,
-              child: Text(actionText),
-            ),
           ],
         ),
       ),
@@ -285,14 +210,6 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
               onTap: () {
                 Navigator.pop(context);
                 _showAddRecord();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.data_saver_on),
-              title: const Text('Add Sample Data'),
-              onTap: () {
-                Navigator.pop(context);
-                _createSampleData();
               },
             ),
           ],

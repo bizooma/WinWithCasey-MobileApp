@@ -52,7 +52,7 @@ class HomePage extends StatelessWidget {
                   // Full image contained within the available space.
                   Center(
                     child: Image.asset(
-                      'assets/images/app_background_1.png',
+                      'assets/images/app-back.png',
                       fit: BoxFit.contain,
                       alignment: Alignment.bottomCenter,
                     ),
