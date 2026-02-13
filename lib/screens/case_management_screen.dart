@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/client_case.dart';
-import '../models/accident_report.dart';
-import '../services/local_storage_service.dart';
-import '../widgets/case_timeline.dart';
+import 'package:impactguide/models/accident_report.dart';
+import 'package:impactguide/models/client_case.dart';
+import 'package:impactguide/screens/emergency_response_screen.dart';
+import 'package:impactguide/services/local_storage_service.dart';
+import 'package:impactguide/widgets/case_timeline.dart';
+import 'package:impactguide/widgets/legal_disclaimer_bar.dart';
 
 class CaseManagementScreen extends StatefulWidget {
   const CaseManagementScreen({super.key});
@@ -15,6 +17,9 @@ class _CaseManagementScreenState extends State<CaseManagementScreen> {
   List<ClientCase> _cases = [];
   List<AccidentReport> _accidentReports = [];
   bool _isLoading = true;
+
+  static const String _casesDisclaimerText =
+      "No information presented within this mobile app should be considered formal legal advice or the formation of a privileged lawyer/attorney-client relationship. When you submit your accident information, we're reviewing it to see if you have a case.";
 
   @override
   void initState() {
@@ -32,83 +37,30 @@ class _CaseManagementScreenState extends State<CaseManagementScreen> {
     });
   }
 
-  Future<void> _createSampleCase() async {
-    final sampleMilestones = [
-      CaseMilestone(
-        title: 'Initial Consultation',
-        description: 'Review accident details and case viability',
-        isCompleted: true,
-        completedDate: DateTime.now().subtract(const Duration(days: 5)),
-      ),
-      CaseMilestone(
-        title: 'Medical Records Collection',
-        description: 'Gather all medical documentation',
-        isCompleted: true,
-        completedDate: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-      CaseMilestone(
-        title: 'Insurance Claim Filing',
-        description: 'Submit claim to insurance company',
-        isCompleted: false,
-        dueDate: DateTime.now().add(const Duration(days: 7)),
-      ),
-      CaseMilestone(
-        title: 'Settlement Negotiations',
-        description: 'Begin negotiation process',
-        isCompleted: false,
-        dueDate: DateTime.now().add(const Duration(days: 30)),
-      ),
-    ];
-
-    final sampleCommunications = [
-      CommunicationEntry(
-        id: '1',
-        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-        message: 'We have received your accident report and will begin reviewing your case.',
-        fromClient: false,
-      ),
-      CommunicationEntry(
-        id: '2',
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-        message: 'Thank you for taking my case. I have additional photos from the accident scene.',
-        fromClient: true,
-      ),
-    ];
-
-    final newCase = ClientCase(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      clientName: 'John Doe',
-      clientEmail: 'john.doe@email.com',
-      clientPhone: '(555) 123-4567',
-      createdAt: DateTime.now().subtract(const Duration(days: 7)),
-      status: CaseStatus.active,
-      accidentReportId: _accidentReports.isNotEmpty ? _accidentReports.first.id : '',
-      documents: [],
-      milestones: sampleMilestones,
-      communications: sampleCommunications,
-      attorneyNotes: 'Client was rear-ended at intersection. Clear liability case with good injury documentation.',
+  Future<void> _startNewCaseFlow() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const EmergencyResponseScreen()),
     );
-
-    await LocalStorageService().saveClientCase(newCase);
-    _loadData();
+    await _loadData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Case Management'),
+        title: const Text('Accident Reports'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _cases.isEmpty
               ? _buildEmptyState()
               : _buildCasesList(),
+      bottomNavigationBar: const LegalDisclaimerBar(text: _casesDisclaimerText),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'casesFab',
-        onPressed: _createSampleCase,
+        onPressed: _startNewCaseFlow,
         icon: const Icon(Icons.add),
-        label: const Text('New Case'),
+        label: const Text('New Report'),
       ),
     );
   }
@@ -121,30 +73,24 @@ class _CaseManagementScreenState extends State<CaseManagementScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.work_outline,
+              Icons.description_outlined,
               size: 80,
               color: Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
-              'No Cases Yet',
+              'No Accident Reports Yet',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
-              'When you create an accident report, it will appear here as a case.',
+              'Create an accident report and we’ll keep everything organized here.',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _createSampleCase,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Sample Case'),
             ),
           ],
         ),
@@ -156,7 +102,12 @@ class _CaseManagementScreenState extends State<CaseManagementScreen> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + LegalDisclaimerBar.preferredHeight,
+        ),
         itemCount: _cases.length,
         itemBuilder: (context, index) {
           final clientCase = _cases[index];
@@ -188,7 +139,7 @@ class _CaseManagementScreenState extends State<CaseManagementScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Case ID: ${clientCase.id}',
+                      'Report ID: ${clientCase.id}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
@@ -390,7 +341,7 @@ class _CaseDetailsSheet extends StatelessWidget {
                 Expanded(
                   child: Center(
                     child: Text(
-                      'Case Details',
+                      'Accident Report Details',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
@@ -425,10 +376,10 @@ class _CaseDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Case #${clientCase.id}',
+                    'Report #${clientCase.id}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                          color: Colors.grey[600],
+                        ),
                   ),
 
                   const SizedBox(height: 24),
@@ -440,9 +391,11 @@ class _CaseDetailsSheet extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          _InfoRow(Icons.phone, 'Phone', clientCase.clientPhone),
+                          _InfoRow(
+                              Icons.phone, 'Phone', clientCase.clientPhone),
                           const SizedBox(height: 8),
-                          _InfoRow(Icons.email, 'Email', clientCase.clientEmail),
+                          _InfoRow(
+                              Icons.email, 'Email', clientCase.clientEmail),
                         ],
                       ),
                     ),
@@ -450,8 +403,7 @@ class _CaseDetailsSheet extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Case Timeline
-                  _SectionTitle('Case Progress'),
+                  _SectionTitle('Report Progress'),
                   CaseTimelineWidget(milestones: clientCase.milestones),
 
                   const SizedBox(height: 16),
@@ -520,8 +472,8 @@ class _InfoRow extends StatelessWidget {
         Text(
           '$label: ',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+                fontWeight: FontWeight.w500,
+              ),
         ),
         Expanded(
           child: Text(
@@ -545,13 +497,10 @@ class _CommunicationTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: communication.fromClient 
-              ? Colors.blue
-              : Colors.green,
+          backgroundColor:
+              communication.fromClient ? Colors.blue : Colors.green,
           child: Icon(
-            communication.fromClient 
-                ? Icons.person
-                : Icons.gavel,
+            communication.fromClient ? Icons.person : Icons.gavel,
             color: Colors.white,
             size: 20,
           ),

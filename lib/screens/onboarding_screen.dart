@@ -55,9 +55,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       ),
       _OnboardPage(
         icon: Icons.work_rounded,
-        title: 'My Case',
+        title: 'Accident Reports',
         description:
-            'Review your case timeline, important details, and documents. Keep everything in one place throughout the process.',
+            'Review your accident report timeline, important details, and documents. Keep everything in one place throughout the process.',
         accentColor: cs.secondary,
       ),
       _OnboardPage(
@@ -205,10 +205,10 @@ class _OnboardPage extends StatelessWidget {
   static String _tipFor(String title, BuildContext context) {
     switch (title) {
       case 'In an Accident':
-        return 'Tip: Use the camera inside the app so photos stay tied to your case.';
+        return 'Tip: Use the camera inside the app so photos stay tied to your accident report.';
       case 'Medical':
         return 'Tip: Log pain levels and meds daily—small details strengthen your claim.';
-      case 'My Case':
+      case 'Accident Reports':
         return 'Tip: Add notes right after conversations so your timeline stays precise.';
       case 'Education':
       default:

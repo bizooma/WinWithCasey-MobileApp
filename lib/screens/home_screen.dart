@@ -185,8 +185,8 @@ class _HomeQuickNavGrid extends StatelessWidget {
               ),
             ),
             _HomeNavCard(
-              title: 'My Case',
-              icon: Icons.work,
+              title: 'Accident Reports',
+              icon: Icons.description,
               background: red,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CaseManagementScreen()),

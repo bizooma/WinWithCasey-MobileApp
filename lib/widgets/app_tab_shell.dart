@@ -48,9 +48,9 @@ class _MaterialTabScaffoldState extends State<_MaterialTabScaffold> {
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Emergency'),
+          NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Accident'),
           NavigationDestination(icon: Icon(Icons.medical_services_outlined), selectedIcon: Icon(Icons.medical_services), label: 'Medical'),
-          NavigationDestination(icon: Icon(Icons.work_outline), selectedIcon: Icon(Icons.work), label: 'Cases'),
+          NavigationDestination(icon: Icon(Icons.description_outlined), selectedIcon: Icon(Icons.description), label: 'Reports'),
           NavigationDestination(icon: Icon(Icons.school_outlined), selectedIcon: Icon(Icons.school), label: 'Education'),
         ],
       ),
@@ -67,9 +67,9 @@ class _IosTabScaffold extends StatelessWidget {
       tabBar: CupertinoTabBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.house), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.exclamationmark_triangle), label: 'Emergency'),
+          BottomNavigationBarItem(icon: Icon(CupertinoIcons.exclamationmark_triangle), label: 'Accident'),
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.heart), label: 'Medical'),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.briefcase), label: 'Cases'),
+          BottomNavigationBarItem(icon: Icon(CupertinoIcons.doc_text), label: 'Reports'),
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.book), label: 'Education'),
         ],
         backgroundColor: CupertinoColors.systemBackground,
