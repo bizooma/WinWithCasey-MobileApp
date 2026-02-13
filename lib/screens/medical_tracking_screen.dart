@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import '../models/medical_record.dart';
 import '../services/local_storage_service.dart';
 
@@ -15,6 +17,7 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
   List<MedicalAppointment> _appointments = [];
   List<MedicalRecord> _records = [];
   bool _isLoading = true;
+  final _uuid = const Uuid();
 
   @override
   void initState() {
@@ -219,19 +222,503 @@ class _MedicalTrackingScreenState extends State<MedicalTrackingScreen>
   }
 
   void _showAppointmentDetails(MedicalAppointment appointment) {
-    // Implementation for showing appointment details
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => AppointmentDetailsSheet(appointment: appointment),
+    );
   }
 
   void _showRecordDetails(MedicalRecord record) {
-    // Implementation for showing record details
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => RecordDetailsSheet(record: record),
+    );
   }
 
-  void _showAddAppointment() {
-    // Implementation for adding appointment
+  Future<void> _showAddAppointment() async {
+    try {
+      final created = await showModalBottomSheet<MedicalAppointment>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (context) => AddAppointmentSheet(idFactory: () => _uuid.v4()),
+      );
+      if (!mounted || created == null) return;
+      await LocalStorageService().saveMedicalAppointment(created);
+      await _loadData();
+      if (!mounted) return;
+      _tabController.animateTo(0);
+    } catch (e) {
+      debugPrint('Failed to add appointment: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not add appointment. Please try again.')),
+      );
+    }
   }
 
-  void _showAddRecord() {
-    // Implementation for adding record
+  Future<void> _showAddRecord() async {
+    try {
+      final created = await showModalBottomSheet<MedicalRecord>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (context) => AddMedicalRecordSheet(idFactory: () => _uuid.v4()),
+      );
+      if (!mounted || created == null) return;
+      await LocalStorageService().saveMedicalRecord(created);
+      await _loadData();
+      if (!mounted) return;
+      _tabController.animateTo(1);
+    } catch (e) {
+      debugPrint('Failed to add medical record: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not add record. Please try again.')),
+      );
+    }
+  }
+}
+
+class AddAppointmentSheet extends StatefulWidget {
+  final String Function() idFactory;
+
+  const AddAppointmentSheet({super.key, required this.idFactory});
+
+  @override
+  State<AddAppointmentSheet> createState() => _AddAppointmentSheetState();
+}
+
+class _AddAppointmentSheetState extends State<AddAppointmentSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _providerController = TextEditingController();
+  final _typeController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  DateTime _date = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _time = const TimeOfDay(hour: 9, minute: 0);
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _providerController.dispose();
+    _typeController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  DateTime get _scheduledDate => DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute);
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottomInset),
+      child: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Schedule appointment', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isSubmitting ? null : _pickDate,
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text('${_date.day}/${_date.month}/${_date.year}'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isSubmitting ? null : _pickTime,
+                      icon: const Icon(Icons.schedule),
+                      label: Text(_time.format(context)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _typeController,
+                decoration: const InputDecoration(labelText: 'Appointment type (e.g., PT, Follow-up)'),
+                textInputAction: TextInputAction.next,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter an appointment type' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _providerController,
+                decoration: const InputDecoration(labelText: 'Provider / clinic'),
+                textInputAction: TextInputAction.next,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a provider name' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _addressController,
+                decoration: const InputDecoration(labelText: 'Address'),
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(labelText: 'Phone number'),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isSubmitting ? null : _submit,
+                  icon: _isSubmitting
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.check),
+                  label: Text(_isSubmitting ? 'Saving…' : 'Save appointment'),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked == null) return;
+    setState(() => _date = picked);
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(context: context, initialTime: _time);
+    if (picked == null) return;
+    setState(() => _time = picked);
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_scheduledDate.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please pick a future date/time.')),
+      );
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    try {
+      final apt = MedicalAppointment(
+        id: widget.idFactory(),
+        scheduledDate: _scheduledDate,
+        providerName: _providerController.text.trim(),
+        appointmentType: _typeController.text.trim(),
+        address: _addressController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        isCompleted: false,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(apt);
+    } catch (e) {
+      debugPrint('Failed to build appointment: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save. Please try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+}
+
+class AddMedicalRecordSheet extends StatefulWidget {
+  final String Function() idFactory;
+
+  const AddMedicalRecordSheet({super.key, required this.idFactory});
+
+  @override
+  State<AddMedicalRecordSheet> createState() => _AddMedicalRecordSheetState();
+}
+
+class _AddMedicalRecordSheetState extends State<AddMedicalRecordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _providerController = TextEditingController();
+  final _typeController = TextEditingController();
+  final _symptomsController = TextEditingController();
+  final _treatmentController = TextEditingController();
+  final _notesController = TextEditingController();
+  final _costController = TextEditingController();
+  int _painLevel = 3;
+  bool _insuranceCovered = true;
+  DateTime _date = DateTime.now();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _providerController.dispose();
+    _typeController.dispose();
+    _symptomsController.dispose();
+    _treatmentController.dispose();
+    _notesController.dispose();
+    _costController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottomInset),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Add medical record', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _isSubmitting ? null : _pickDate,
+                  icon: const Icon(Icons.event),
+                  label: Text('${_date.day}/${_date.month}/${_date.year}'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _typeController,
+                  decoration: const InputDecoration(labelText: 'Visit type (e.g., ER, PT, Ortho)'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a visit type' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _providerController,
+                  decoration: const InputDecoration(labelText: 'Provider / clinic'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a provider name' : null,
+                ),
+                const SizedBox(height: 12),
+                Text('Pain level: $_painLevel/10', style: Theme.of(context).textTheme.bodyMedium),
+                Slider(
+                  value: _painLevel.toDouble(),
+                  min: 1,
+                  max: 10,
+                  divisions: 9,
+                  label: '$_painLevel',
+                  onChanged: _isSubmitting ? null : (v) => setState(() => _painLevel = v.round()),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _symptomsController,
+                  decoration: const InputDecoration(labelText: 'Symptoms'),
+                  maxLines: 2,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter symptoms' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _treatmentController,
+                  decoration: const InputDecoration(labelText: 'Treatment / plan'),
+                  maxLines: 2,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter treatment' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _costController,
+                        decoration: const InputDecoration(labelText: 'Cost (optional)', prefixText: '\$'),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Covered'),
+                        value: _insuranceCovered,
+                        onChanged: _isSubmitting ? null : (v) => setState(() => _insuranceCovered = v),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _isSubmitting ? null : _submit,
+                    icon: _isSubmitting
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.check),
+                    label: Text(_isSubmitting ? 'Saving…' : 'Save record'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked == null) return;
+    setState(() => _date = picked);
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final cost = double.tryParse(_costController.text.trim());
+      final record = MedicalRecord(
+        id: widget.idFactory(),
+        date: _date,
+        providerName: _providerController.text.trim(),
+        appointmentType: _typeController.text.trim(),
+        painLevel: _painLevel,
+        symptoms: _symptomsController.text.trim(),
+        treatment: _treatmentController.text.trim(),
+        notes: _notesController.text.trim(),
+        photoUrls: const [],
+        cost: cost,
+        insuranceCovered: _insuranceCovered,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(record);
+    } catch (e) {
+      debugPrint('Failed to build medical record: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save. Please try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+}
+
+class AppointmentDetailsSheet extends StatelessWidget {
+  final MedicalAppointment appointment;
+
+  const AppointmentDetailsSheet({super.key, required this.appointment});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Appointment', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          _InfoRow(icon: Icons.schedule, title: 'When', value: _formatDateTime(appointment.scheduledDate)),
+          _InfoRow(icon: Icons.local_hospital, title: 'Type', value: appointment.appointmentType),
+          _InfoRow(icon: Icons.person, title: 'Provider', value: appointment.providerName),
+          if (appointment.address.trim().isNotEmpty)
+            _InfoRow(icon: Icons.location_on, title: 'Address', value: appointment.address),
+          if (appointment.phoneNumber.trim().isNotEmpty)
+            _InfoRow(icon: Icons.phone, title: 'Phone', value: appointment.phoneNumber),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  static String _formatDateTime(DateTime dateTime) =>
+      '${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+}
+
+class RecordDetailsSheet extends StatelessWidget {
+  final MedicalRecord record;
+
+  const RecordDetailsSheet({super.key, required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Medical record', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          _InfoRow(icon: Icons.event, title: 'Date', value: '${record.date.day}/${record.date.month}/${record.date.year}'),
+          _InfoRow(icon: Icons.local_hospital, title: 'Type', value: record.appointmentType),
+          _InfoRow(icon: Icons.person, title: 'Provider', value: record.providerName),
+          _InfoRow(icon: Icons.monitor_heart, title: 'Pain', value: '${record.painLevel}/10'),
+          _InfoRow(icon: Icons.sick, title: 'Symptoms', value: record.symptoms),
+          _InfoRow(icon: Icons.healing, title: 'Treatment', value: record.treatment),
+          if (record.notes.trim().isNotEmpty) _InfoRow(icon: Icons.notes, title: 'Notes', value: record.notes),
+          if (record.cost != null)
+            _InfoRow(
+              icon: Icons.attach_money,
+              title: 'Cost',
+              value: '\$${record.cost!.toStringAsFixed(2)} (${record.insuranceCovered ? 'Covered' : 'Not covered'})',
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _InfoRow({required this.icon, required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.labelMedium),
+                const SizedBox(height: 2),
+                Text(value, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

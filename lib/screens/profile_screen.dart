@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/identity_service.dart';
+import 'package:impactguide/screens/auth_gate.dart';
+import 'package:impactguide/services/identity_service.dart';
+import 'package:impactguide/services/supabase_auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +16,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _emailCtrl;
   late TextEditingController _phoneCtrl;
   bool _saving = false;
+  bool _signingOut = false;
 
   @override
   void initState() {
@@ -72,6 +75,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SnackBar(content: Text('Profile saved')),
       );
       Navigator.of(context).maybePop();
+    }
+  }
+
+  Future<void> _signOut() async {
+    setState(() => _signingOut = true);
+    try {
+      await SupabaseAuthService.instance.signOut();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+        (_) => false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _signingOut = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not sign out. Please try again.')),
+      );
     }
   }
 
@@ -153,6 +174,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
               _TipsCard(color: scheme.primary),
+              if (SupabaseAuthService.instance.currentUser != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _signingOut ? null : _signOut,
+                    icon: _signingOut
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.logout),
+                    label: Text(_signingOut ? 'Signing out…' : 'Sign out'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

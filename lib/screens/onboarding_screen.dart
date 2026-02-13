@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/app_tab_shell.dart';
+import 'package:impactguide/screens/sign_in_screen.dart';
 
 class OnboardingFlow extends StatefulWidget {
   const OnboardingFlow({super.key});
@@ -15,7 +15,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
   void _goHome() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const ImpactGuideTabScaffold()),
+      MaterialPageRoute(builder: (_) => const SignInScreen()),
     );
   }
 

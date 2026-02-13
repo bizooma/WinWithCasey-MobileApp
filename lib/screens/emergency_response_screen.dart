@@ -6,6 +6,7 @@ import '../models/accident_report.dart';
 import '../services/location_service.dart';
 import '../services/document_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/accident_report_email_service.dart';
 import '../models/client_case.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cross_file/cross_file.dart';
@@ -141,6 +142,10 @@ class _EmergencyResponseScreenState extends State<EmergencyResponseScreen> {
     );
 
     await LocalStorageService().saveAccidentReport(report);
+
+    // Best-effort server-side notification email (no attachments).
+    // Temporary testing recipient is currently joe@bizooma.com.
+    await AccidentReportEmailService.sendAccidentReportSubmittedEmail(report);
 
     // Automatically create a new ClientCase for the accident
     final newCase = ClientCase(
